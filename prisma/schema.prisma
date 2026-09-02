@@ -1,0 +1,122 @@
+// Prisma schema for Meteor Pro - Plateforme d'inventaire des immobilisations avec QR Code
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  GESTIONNAIRE
+  EMPLOYE
+}
+
+enum AssetStatus {
+  EN_SERVICE
+  EN_MAINTENANCE
+  HORS_SERVICE
+  CEDE
+}
+
+model User {
+  id           String           @id @default(uuid())
+  nom          String
+  email        String           @unique
+  password     String
+  role         Role             @default(EMPLOYE)
+  departement  String?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  assets       Asset[]          @relation("ResponsibleUser")
+  vehicles     Vehicle[]        @relation("DriverUser")
+  incidents    IncidentReport[] @relation("ReportedByUser")
+}
+
+model Category {
+  id     String  @id @default(uuid())
+  nom    String  @unique
+  code   String  @unique // ex: VEHICULE, MACHINE, INFORMATIQUE, MOBILIER, AUTRE
+  icone  String? // nom d'icône lucide
+  assets Asset[]
+}
+
+model Asset {
+  id                String           @id @default(uuid())
+  nom               String
+  numeroInventaire  String           @unique
+  description       String?
+  dateAcquisition   DateTime
+  valeurAcquisition Float
+  valeurActuelle    Float
+  fournisseur       String?
+  numeroFacture     String?
+  site              String           // ex: Siège Lyon, Site Usine Nord, Entrepôt Marseille
+  batiment          String?
+  service           String?
+  statut            AssetStatus      @default(EN_SERVICE)
+  photos            String[]         @default([])
+  documents         String[]         @default([])
+  qrCodeUrl         String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  categoryId        String
+  category          Category         @relation(fields: [categoryId], references: [id])
+
+  responsableId     String?
+  responsable       User?            @relation("ResponsibleUser", fields: [responsableId], references: [id])
+
+  vehicle           Vehicle?
+  maintenanceLogs   MaintenanceLog[]
+  incidentReports   IncidentReport[]
+}
+
+model Vehicle {
+  id                   String    @id @default(uuid())
+  assetId              String    @unique
+  asset                Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  immatriculation      String    @unique
+  marque               String
+  modele               String
+  annee                Int
+  typeCarburant        String    // Essence, Diesel, Électrique, Hybride
+  kilometrage          Int       @default(0)
+  dateDernierControle  DateTime?
+  dateProchainControle DateTime?
+  dateAssurance        DateTime?
+  dateEcheanceAssurance DateTime?
+
+  conducteurHabituelId String?
+  conducteurHabituel   User?     @relation("DriverUser", fields: [conducteurHabituelId], references: [id])
+}
+
+model MaintenanceLog {
+  id               String    @id @default(uuid())
+  assetId          String
+  asset            Asset     @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  date             DateTime  @default(now())
+  typeIntervention String    // Entretien régulier, Réparation, Contrôle technique, Révision, Remplacement pièces
+  cout             Float     @default(0)
+  prestataire      String?
+  notes            String?
+  documentUrl      String?
+  createdAt        DateTime  @default(now())
+}
+
+model IncidentReport {
+  id          String   @id @default(uuid())
+  assetId     String
+  asset       Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  date        DateTime @default(now())
+  titre       String
+  description String
+  statut      String   @default("OUVERT") // OUVERT, EN_COURS, RESOLU
+  signalePar  String?  // Nom ou Email de la personne ayant scanné
+  userId      String?
+  user        User?    @relation("ReportedByUser", fields: [userId], references: [id])
+  createdAt   DateTime @default(now())
+}
