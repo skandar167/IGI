@@ -8,7 +8,7 @@ import { Asset } from '@/lib/types';
 import { StatusBadge } from '@/components/StatusBadge';
 import { ReportIncidentModal } from '@/components/ReportIncidentModal';
 import { AddMaintenanceModal } from '@/components/AddMaintenanceModal';
-import { getStoredUser, SessionUser } from '@/lib/auth';
+import { useSession } from 'next-auth/react';
 import {
   ArrowLeft,
   QrCode,
@@ -40,7 +40,8 @@ export default function AssetScannedDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
+  const { data: session } = useSession();
+  const currentUser = session?.user as any;
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
@@ -63,11 +64,7 @@ export default function AssetScannedDetailPage({
   };
 
   useEffect(() => {
-    setCurrentUser(getStoredUser());
-    const handleAuth = () => setCurrentUser(getStoredUser());
-    window.addEventListener('auth-change', handleAuth);
     fetchAsset();
-    return () => window.removeEventListener('auth-change', handleAuth);
   }, [params.id]);
 
   if (isLoading) {

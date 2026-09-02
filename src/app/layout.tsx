@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
+import SessionProvider from "@/components/SessionProvider";
 
 export const metadata: Metadata = {
   title: "Meteor Pro — Inventaire des Immobilisations d'Entreprise & QR Code",
@@ -15,8 +16,10 @@ export default function RootLayout({
   return (
     <html lang="fr" className="h-full">
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 antialiased selection:bg-indigo-500 selection:text-white">
-        <Navbar />
-        <main className="flex-1 pb-16">{children}</main>
+        <SessionProvider>
+          <Navbar />
+          <main className="flex-1 pb-16">{children}</main>
+        </SessionProvider>
         <footer className="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 no-print">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">

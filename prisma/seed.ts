@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import QRCode from 'qrcode';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -24,29 +25,33 @@ async function main() {
   }
   console.log('✅ Catégories seedées');
 
-  // 2. Utilisateurs
+  // 2. Utilisateurs avec mots de passe hashés
+  const adminHash = await bcrypt.hash('Admin2024!', 12);
+  const gestHash = await bcrypt.hash('Gest2024!', 12);
+  const empHash = await bcrypt.hash('Emp2024!', 12);
+
   const users = [
     {
       id: 'user-admin-1',
       nom: 'Alexandre Dupont',
-      email: 'admin@entreprise.fr',
-      password: 'admin_password_hashed_demo',
+      email: 'admin@meteor-pro.dz',
+      passwordHash: adminHash,
       role: 'ADMIN' as const,
       departement: 'Direction des Opérations',
     },
     {
       id: 'user-gest-1',
       nom: 'Sophie Martin',
-      email: 'gestionnaire@entreprise.fr',
-      password: 'gest_password_hashed_demo',
+      email: 'gestionnaire@meteor-pro.dz',
+      passwordHash: gestHash,
       role: 'GESTIONNAIRE' as const,
       departement: 'Services Généraux & Flotte',
     },
     {
       id: 'user-emp-1',
       nom: 'Thomas Leroy',
-      email: 'employe@entreprise.fr',
-      password: 'emp_password_hashed_demo',
+      email: 'employe@meteor-pro.dz',
+      passwordHash: empHash,
       role: 'EMPLOYE' as const,
       departement: 'Maintenance & Logistique',
     },
@@ -55,11 +60,11 @@ async function main() {
   for (const u of users) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: u,
+      update: { passwordHash: u.passwordHash, nom: u.nom, role: u.role, departement: u.departement },
       create: u,
     });
   }
-  console.log('✅ Utilisateurs seedés');
+  console.log('✅ Utilisateurs seedés avec mots de passe bcrypt');
 
   // 3. Biens et Véhicules
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';

@@ -12,7 +12,8 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-admin-1',
     nom: 'Alexandre Dupont',
-    email: 'admin@entreprise.fr',
+    email: 'admin@meteor-pro.dz',
+    passwordHash: '$2b$10$jHWSUzsgJ5ICQbOtKsl6OebKMC06t/BrbeVoOoyWA0HDnptIyz5Zm',
     role: 'ADMIN',
     departement: 'Direction des Opérations',
     createdAt: '2024-01-01T08:00:00.000Z',
@@ -21,7 +22,8 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-gest-1',
     nom: 'Sophie Martin',
-    email: 'gestionnaire@entreprise.fr',
+    email: 'gestionnaire@meteor-pro.dz',
+    passwordHash: '$2b$10$cp9EILCXi25sSPpijmdvbOOa53Oi6PO8LAelesYf7/p8J2ur8VeT2',
     role: 'GESTIONNAIRE',
     departement: 'Services Généraux & Logistique',
     createdAt: '2024-01-15T09:30:00.000Z',
@@ -30,7 +32,8 @@ export const INITIAL_USERS: User[] = [
   {
     id: 'user-emp-1',
     nom: 'Thomas Leroy',
-    email: 'employe@entreprise.fr',
+    email: 'employe@meteor-pro.dz',
+    passwordHash: '$2b$10$hCACx1J/naZW3.EhGzg/p.R.xdqvzgqR1En9H0ajxdzvCaWK4d0XW',
     role: 'EMPLOYE',
     departement: 'Maintenance & Terrain',
     createdAt: '2024-02-01T10:00:00.000Z',

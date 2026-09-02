@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -13,32 +13,23 @@ import {
   QrCode,
   Menu,
   X,
-  UserCheck,
   ChevronDown,
   Plus,
-  ShieldAlert,
+  LogOut,
+  LogIn,
+  User,
 } from 'lucide-react';
 import { QRScannerModal } from './QRScannerModal';
-import { DEMO_ACCOUNTS, getStoredUser, setStoredUser, SessionUser } from '@/lib/auth';
+import { useSession, signOut } from 'next-auth/react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
+  const { data: session, status } = useSession();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [currentUser, setCurrentUser] = useState<SessionUser | null>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-  useEffect(() => {
-    setCurrentUser(getStoredUser());
-    const handleAuthChange = () => setCurrentUser(getStoredUser());
-    window.addEventListener('auth-change', handleAuthChange);
-    return () => window.removeEventListener('auth-change', handleAuthChange);
-  }, []);
-
-  const switchRole = (user: SessionUser) => {
-    setStoredUser(user);
-    setIsUserMenuOpen(false);
-  };
+  const currentUser = session?.user as any;
 
   const navLinks = [
     { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -57,7 +48,7 @@ export const Navbar: React.FC = () => {
       case 'EMPLOYE':
         return { label: 'Employé', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
       default:
-        return { label: 'Invité Public', color: 'bg-slate-100 text-slate-700 border-slate-200' };
+        return { label: 'Invité', color: 'bg-slate-100 text-slate-700 border-slate-200' };
     }
   };
 
@@ -123,7 +114,7 @@ export const Navbar: React.FC = () => {
               {/* Scan QR Button */}
               <button
                 onClick={() => setIsScannerOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 qr-scan-trigger"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 qr-scan-trigger cursor-pointer"
                 title="Scanner un QR code physique"
               >
                 <QrCode className="w-4 h-4" />
@@ -139,80 +130,67 @@ export const Navbar: React.FC = () => {
                 <span>Nouveau bien</span>
               </Link>
 
-              {/* User Switcher Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                  className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 transition text-left"
-                >
-                  <div className="w-7 h-7 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-xs">
-                    {currentUser?.nom ? currentUser.nom.charAt(0) : 'U'}
-                  </div>
-                  <div className="hidden sm:block text-left">
-                    <p className="text-xs font-semibold text-slate-800 leading-tight">
-                      {currentUser?.nom || 'Invité'}
-                    </p>
-                    <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded border ${badge.color}`}>
-                      {badge.label}
-                    </span>
-                  </div>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
-                </button>
-
-                {isUserMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
-                    <div className="px-4 py-2 border-b border-slate-100">
-                      <p className="text-xs font-medium text-slate-400">Rôle actif actuel :</p>
-                      <p className="text-sm font-bold text-slate-900">{currentUser?.nom}</p>
-                      <p className="text-xs text-slate-500">{currentUser?.departement}</p>
+              {/* User Dropdown / Login Button */}
+              {status === 'authenticated' && currentUser ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-left cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                      {currentUser?.name ? currentUser.name.charAt(0) : 'U'}
                     </div>
-
-                    <div className="p-2 space-y-1">
-                      <p className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Changer de profil (Démo 1-Clic)
+                    <div className="hidden sm:block text-left">
+                      <p className="text-xs font-semibold text-slate-800 leading-tight">
+                        {currentUser?.name || currentUser?.email}
                       </p>
-                      <button
-                        onClick={() => switchRole(DEMO_ACCOUNTS.ADMIN)}
-                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-rose-50 hover:text-rose-900 transition text-left"
-                      >
-                        <span className="font-semibold text-slate-800">Admin (Alexandre)</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 font-bold">Admin</span>
-                      </button>
-                      <button
-                        onClick={() => switchRole(DEMO_ACCOUNTS.GESTIONNAIRE)}
-                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-indigo-50 hover:text-indigo-900 transition text-left"
-                      >
-                        <span className="font-semibold text-slate-800">Gestionnaire (Sophie)</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-bold">Gestionnaire</span>
-                      </button>
-                      <button
-                        onClick={() => switchRole(DEMO_ACCOUNTS.EMPLOYE)}
-                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg text-xs hover:bg-emerald-50 hover:text-emerald-900 transition text-left"
-                      >
-                        <span className="font-semibold text-slate-800">Employé (Thomas)</span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">Employé</span>
-                      </button>
+                      <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded border ${badge.color}`}>
+                        {badge.label}
+                      </span>
                     </div>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                  </button>
 
-                    <div className="pt-2 border-t border-slate-100 px-2">
-                      <button
-                        onClick={() => {
-                          setStoredUser(null);
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="w-full text-left px-2 py-1.5 rounded-lg text-xs text-slate-600 hover:bg-slate-100 transition"
-                      >
-                        Tester la vue publique (Déconnexion)
-                      </button>
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-xs font-medium text-slate-400">Connecté en tant que :</p>
+                        <p className="text-sm font-bold text-slate-900">{currentUser?.name}</p>
+                        <p className="text-xs text-slate-500 font-mono truncate">{currentUser?.email}</p>
+                        {currentUser?.departement && (
+                          <p className="text-[11px] text-slate-400 mt-1">{currentUser.departement}</p>
+                        )}
+                      </div>
+
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            setIsUserMenuOpen(false);
+                            signOut({ callbackUrl: '/login' });
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Se déconnecter</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-semibold hover:bg-indigo-100 transition"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>Connexion</span>
+                </Link>
+              )}
 
               {/* Mobile menu hamburger */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition"
+                className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
               >
                 {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
@@ -242,7 +220,7 @@ export const Navbar: React.FC = () => {
                 </Link>
               );
             })}
-            <div className="pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-slate-100 space-y-2">
               <Link
                 href="/assets/new"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -251,6 +229,18 @@ export const Navbar: React.FC = () => {
                 <Plus className="w-4 h-4" />
                 <span>Nouveau bien</span>
               </Link>
+              {status === 'authenticated' && (
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    signOut({ callbackUrl: '/login' });
+                  }}
+                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Se déconnecter</span>
+                </button>
+              )}
             </div>
           </div>
         )}

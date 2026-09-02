@@ -73,6 +73,28 @@ export const dbService = {
     return mockUsers;
   },
 
+  async getUserByEmail(email: string): Promise<User | null> {
+    const normalized = email.trim().toLowerCase();
+    if (await dbService.isPrismaActive()) {
+      const u = await prisma!.user.findUnique({
+        where: { email: normalized },
+      });
+      if (!u) return null;
+      return {
+        id: u.id,
+        nom: u.nom,
+        email: u.email,
+        passwordHash: u.passwordHash,
+        role: u.role as any,
+        departement: u.departement || undefined,
+        createdAt: u.createdAt.toISOString(),
+        updatedAt: u.updatedAt.toISOString(),
+      };
+    }
+    const found = mockUsers.find((u) => u.email.toLowerCase() === normalized);
+    return found || null;
+  },
+
   async getAssets(filters?: {
     categoryId?: string;
     site?: string;

@@ -7,6 +7,7 @@ export interface User {
   nom: string;
   email: string;
   password?: string;
+  passwordHash?: string;
   role: Role;
   departement?: string;
   createdAt: string;
