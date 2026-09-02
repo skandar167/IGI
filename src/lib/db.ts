@@ -28,7 +28,7 @@ let mockAssets: Asset[] = [...INITIAL_ASSETS];
 // Initialize QR codes for mock assets on first load
 let initializedMockQr = false;
 async function ensureMockQrCodes() {
-  if (initializedMockQr) return;
+  if (initializedMockQr || process.env.DATABASE_URL) return;
   for (const asset of mockAssets) {
     if (!asset.qrCodeUrl) {
       const scanUrl = getAssetScanUrl(asset.id);
@@ -38,13 +38,21 @@ async function ensureMockQrCodes() {
   initializedMockQr = true;
 }
 
+let prismaActiveCache: { active: boolean; checkedAt: number } | null = null;
+
 export const dbService = {
   async isPrismaActive(): Promise<boolean> {
     if (!prisma || !process.env.DATABASE_URL) return false;
+    const now = Date.now();
+    if (prismaActiveCache && now - prismaActiveCache.checkedAt < 60000) {
+      return prismaActiveCache.active;
+    }
     try {
       await prisma.$queryRaw`SELECT 1`;
+      prismaActiveCache = { active: true, checkedAt: now };
       return true;
     } catch {
+      prismaActiveCache = { active: false, checkedAt: now };
       return false;
     }
   },

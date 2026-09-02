@@ -31,6 +31,8 @@ export default function AssetsPage() {
   const [selectedSite, setSelectedSite] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
+  const isFirstRender = React.useRef(true);
+
   const fetchAssets = async () => {
     setIsLoading(true);
     try {
@@ -44,6 +46,7 @@ export default function AssetsPage() {
       const json = await res.json();
       if (json.success) {
         setAssets(json.data);
+        return json.data as Asset[];
       }
     } catch (err) {
       console.error('Error loading assets:', err);
@@ -53,15 +56,13 @@ export default function AssetsPage() {
   };
 
   useEffect(() => {
-    fetch('/api/assets')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.success) {
-          setAssets(data.data);
-          // Extract unique categories
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      fetchAssets().then((loaded) => {
+        if (loaded) {
           const cats: Category[] = [];
           const catIds = new Set();
-          data.data.forEach((a: Asset) => {
+          loaded.forEach((a: Asset) => {
             if (a.category && !catIds.has(a.category.id)) {
               catIds.add(a.category.id);
               cats.push(a.category);
@@ -69,14 +70,13 @@ export default function AssetsPage() {
           });
           setCategories(cats);
         }
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+      });
+      return;
+    }
 
-  useEffect(() => {
     const timer = setTimeout(() => {
       fetchAssets();
-    }, 250);
+    }, 200);
     return () => clearTimeout(timer);
   }, [search, selectedCategory, selectedStatus, selectedSite]);
 
