@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Static and internal assets
+  // Static and internal assets — always passthrough
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/auth') ||
@@ -20,36 +20,36 @@ export function middleware(req: NextRequest) {
     req.cookies.has('next-auth.session-token') ||
     req.cookies.has('__Secure-next-auth.session-token');
 
+  // Completely public pages (no session required)
+  const isPublicPage =
+    pathname === '/home' ||
+    pathname === '/login' ||
+    pathname === '/register';
+
   // Allow public scan page: /assets/[id] (but NOT /assets, /assets/new, or /assets/[id]/edit)
   const isAssetScanPage = /^\/assets\/[^/]+$/.test(pathname);
   const isIncidentApi = /^\/api\/assets\/[^/]+\/incident$/.test(pathname);
-  const isAuthPage = pathname === '/login' || pathname === '/register';
 
-  if (isAuthPage) {
-    if (hasSession) {
-      return NextResponse.redirect(new URL('/home', req.url));
-    }
-    return NextResponse.next();
-  }
-
-  if (isAssetScanPage || isIncidentApi) {
-    return NextResponse.next();
-  }
-
-  // Root redirect
+  // Root redirect → always go to /home (public landing page)
   if (pathname === '/') {
-    if (hasSession) {
-      return NextResponse.redirect(new URL('/home', req.url));
-    } else {
-      return NextResponse.redirect(new URL('/login', req.url));
-    }
+    return NextResponse.redirect(new URL('/home', req.url));
   }
 
-  // All other protected routes require authentication
+  // Auth pages: redirect logged-in users to dashboard
+  if ((pathname === '/login' || pathname === '/register') && hasSession) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // Allow public pages and scan routes
+  if (isPublicPage || isAssetScanPage || isIncidentApi) {
+    return NextResponse.next();
+  }
+
+  // All other routes require authentication
   if (!hasSession) {
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(loginUrl);
+    const homeUrl = new URL('/home', req.url);
+    homeUrl.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(homeUrl);
   }
 
   return NextResponse.next();

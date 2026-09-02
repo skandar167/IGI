@@ -17,7 +17,7 @@ import {
   Plus,
   LogOut,
   LogIn,
-  User,
+  UserPlus,
   Home,
 } from 'lucide-react';
 import { QRScannerModal } from './QRScannerModal';
@@ -31,9 +31,9 @@ export const Navbar: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
   const currentUser = session?.user as any;
+  const isAuthenticated = status === 'authenticated' && !!currentUser;
 
   const navLinks = [
-    { href: '/home', label: 'Accueil', icon: Home },
     { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { href: '/assets', label: 'Immobilisations', icon: Boxes },
     { href: '/vehicles', label: 'Flotte Véhicules', icon: Truck },
@@ -61,9 +61,10 @@ export const Navbar: React.FC = () => {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
-            {/* Logo */}
+
+            {/* Logo — always visible, links to /home when not logged in */}
             <div className="flex items-center gap-6">
-              <Link href="/dashboard" className="flex items-center gap-3 group">
+              <Link href={isAuthenticated ? '/dashboard' : '/home'} className="flex items-center gap-3 group">
                 <div className="relative h-11 w-24 sm:w-28 flex items-center justify-center transition group-hover:scale-105">
                   <Image
                     src="/logo.jpg"
@@ -88,120 +89,135 @@ export const Navbar: React.FC = () => {
                 </div>
               </Link>
 
-              {/* Desktop Navigation Links */}
-              <nav className="hidden md:flex items-center gap-1">
-                {navLinks.map((link) => {
-                  const Icon = link.icon;
-                  const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
-                        isActive
-                          ? 'bg-indigo-50 text-indigo-700 font-semibold'
-                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
-                      }`}
-                    >
-                      <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
-                      <span>{link.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
+              {/* Desktop Navigation Links — only when authenticated */}
+              {isAuthenticated && (
+                <nav className="hidden md:flex items-center gap-1">
+                  {navLinks.map((link) => {
+                    const Icon = link.icon;
+                    const isActive = pathname === link.href || (link.href !== '/dashboard' && pathname.startsWith(link.href));
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition ${
+                          isActive
+                            ? 'bg-indigo-50 text-indigo-700 font-semibold'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/80'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-slate-400'}`} />
+                        <span>{link.label}</span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              )}
             </div>
 
-            {/* Right Quick Actions */}
+            {/* Right Actions */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* Scan QR Button */}
-              <button
-                onClick={() => setIsScannerOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 qr-scan-trigger cursor-pointer"
-                title="Scanner un QR code physique"
-              >
-                <QrCode className="w-4 h-4" />
-                <span className="hidden sm:inline">Scanner QR</span>
-              </button>
 
-              {/* New Asset Button */}
-              <Link
-                href="/assets/new"
-                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold shadow-sm transition"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Nouveau bien</span>
-              </Link>
-
-              {/* User Dropdown / Login Button */}
-              {status === 'authenticated' && currentUser ? (
-                <div className="relative">
+              {isAuthenticated ? (
+                <>
+                  {/* Scan QR Button */}
                   <button
-                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-left cursor-pointer"
+                    onClick={() => setIsScannerOpen(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition active:scale-95 qr-scan-trigger cursor-pointer"
+                    title="Scanner un QR code physique"
                   >
-                    <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
-                      {currentUser?.name ? currentUser.name.charAt(0) : 'U'}
-                    </div>
-                    <div className="hidden sm:block text-left">
-                      <p className="text-xs font-semibold text-slate-800 leading-tight">
-                        {currentUser?.name || currentUser?.email}
-                      </p>
-                      <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded border ${badge.color}`}>
-                        {badge.label}
-                      </span>
-                    </div>
-                    <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    <QrCode className="w-4 h-4" />
+                    <span className="hidden sm:inline">Scanner QR</span>
                   </button>
 
-                  {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
-                      <div className="px-4 py-3 border-b border-slate-100">
-                        <p className="text-xs font-medium text-slate-400">Connecté en tant que :</p>
-                        <p className="text-sm font-bold text-slate-900">{currentUser?.name}</p>
-                        <p className="text-xs text-slate-500 font-mono truncate">{currentUser?.email}</p>
-                        {currentUser?.departement && (
-                          <p className="text-[11px] text-slate-400 mt-1">{currentUser.departement}</p>
-                        )}
-                      </div>
+                  {/* New Asset Button */}
+                  <Link
+                    href="/assets/new"
+                    className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold shadow-sm transition"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Nouveau bien</span>
+                  </Link>
 
-                      <div className="p-2">
-                        <button
-                          onClick={() => {
-                            setIsUserMenuOpen(false);
-                            signOut({ callbackUrl: '/login' });
-                          }}
-                          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          <span>Se déconnecter</span>
-                        </button>
+                  {/* User Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                      className="flex items-center gap-2 p-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition text-left cursor-pointer"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-xs">
+                        {currentUser?.name ? currentUser.name.charAt(0) : 'U'}
                       </div>
-                    </div>
-                  )}
-                </div>
+                      <div className="hidden sm:block text-left">
+                        <p className="text-xs font-semibold text-slate-800 leading-tight">
+                          {currentUser?.name || currentUser?.email}
+                        </p>
+                        <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded border ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+
+                    {isUserMenuOpen && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95">
+                        <div className="px-4 py-3 border-b border-slate-100">
+                          <p className="text-xs font-medium text-slate-400">Connecté en tant que :</p>
+                          <p className="text-sm font-bold text-slate-900">{currentUser?.name}</p>
+                          <p className="text-xs text-slate-500 font-mono truncate">{currentUser?.email}</p>
+                          {currentUser?.departement && (
+                            <p className="text-[11px] text-slate-400 mt-1">{currentUser.departement}</p>
+                          )}
+                        </div>
+
+                        <div className="p-2">
+                          <button
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              signOut({ callbackUrl: '/home' });
+                            }}
+                            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            <span>Se déconnecter</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Mobile Hamburger — only when authenticated */}
+                  <button
+                    onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                    className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                  </button>
+                </>
               ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-xs sm:text-sm font-semibold hover:bg-indigo-100 transition"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>Connexion</span>
-                </Link>
+                /* Guest: show Login + Register buttons only */
+                <div className="flex items-center gap-2">
+                  <Link
+                    href="/register"
+                    className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 text-slate-700 text-xs sm:text-sm font-semibold hover:bg-slate-50 transition"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>Demander un accès</span>
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold shadow-sm transition"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>Connexion</span>
+                  </Link>
+                </div>
               )}
-
-              {/* Mobile menu hamburger */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
             </div>
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer */}
-        {isMobileMenuOpen && (
+        {/* Mobile Navigation Drawer — only when authenticated */}
+        {isAuthenticated && isMobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-1">
             {navLinks.map((link) => {
               const Icon = link.icon;
@@ -231,25 +247,25 @@ export const Navbar: React.FC = () => {
                 <Plus className="w-4 h-4" />
                 <span>Nouveau bien</span>
               </Link>
-              {status === 'authenticated' && (
-                <button
-                  onClick={() => {
-                    setIsMobileMenuOpen(false);
-                    signOut({ callbackUrl: '/login' });
-                  }}
-                  className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>Se déconnecter</span>
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  signOut({ callbackUrl: '/home' });
+                }}
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Se déconnecter</span>
+              </button>
             </div>
           </div>
         )}
       </header>
 
       {/* Floating QR Scanner Modal */}
-      <QRScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+      {isAuthenticated && (
+        <QRScannerModal isOpen={isScannerOpen} onClose={() => setIsScannerOpen(false)} />
+      )}
     </>
   );
 };
