@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ExternalLink,
 } from 'lucide-react';
+import { UserManagementTable } from '@/components/UserManagementTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,34 +78,17 @@ export default async function SettingsPage() {
         </div>
       </div>
 
-      {/* Users and Roles */}
+      {/* Users and Roles Management */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-4">
         <div className="flex items-center gap-2 font-bold text-slate-900 text-base">
           <Users className="w-5 h-5 text-indigo-600" />
-          <h2>Utilisateurs et Rôles ({users.length})</h2>
+          <h2>Gestion des Utilisateurs &amp; Approbations</h2>
         </div>
+        <p className="text-xs text-slate-500">
+          Validez les demandes d&apos;accès des nouveaux collaborateurs et gérez les droits d&apos;accès à la plateforme.
+        </p>
 
-        <div className="divide-y divide-slate-100">
-          {users.map((u) => (
-            <div key={u.id} className="py-3.5 flex items-center justify-between text-xs">
-              <div>
-                <span className="font-bold text-slate-900 text-sm block">{u.nom}</span>
-                <span className="text-slate-500">{u.email} • {u.departement || 'Sans département'}</span>
-              </div>
-              <span
-                className={`px-2.5 py-1 rounded-full font-bold text-[11px] border ${
-                  u.role === 'ADMIN'
-                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                    : u.role === 'GESTIONNAIRE'
-                    ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                }`}
-              >
-                {u.role}
-              </span>
-            </div>
-          ))}
-        </div>
+        <UserManagementTable initialUsers={users} />
       </div>
 
       {/* Categories */}

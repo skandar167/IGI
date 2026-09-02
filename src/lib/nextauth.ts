@@ -29,6 +29,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null;
         }
 
+        if (user.estApprouve === false) {
+          throw new Error('PENDING_APPROVAL');
+        }
+
         return {
           id: user.id,
           name: user.nom,

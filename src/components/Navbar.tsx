@@ -18,6 +18,7 @@ import {
   LogOut,
   LogIn,
   User,
+  Home,
 } from 'lucide-react';
 import { QRScannerModal } from './QRScannerModal';
 import { useSession, signOut } from 'next-auth/react';
@@ -32,6 +33,7 @@ export const Navbar: React.FC = () => {
   const currentUser = session?.user as any;
 
   const navLinks = [
+    { href: '/home', label: 'Accueil', icon: Home },
     { href: '/dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
     { href: '/assets', label: 'Immobilisations', icon: Boxes },
     { href: '/vehicles', label: 'Flotte Véhicules', icon: Truck },

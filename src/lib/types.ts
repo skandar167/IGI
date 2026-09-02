@@ -10,6 +10,7 @@ export interface User {
   passwordHash?: string;
   role: Role;
   departement?: string;
+  estApprouve?: boolean;
   createdAt: string;
   updatedAt: string;
 }

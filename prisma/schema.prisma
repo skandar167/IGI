@@ -29,6 +29,7 @@ model User {
   passwordHash String
   role         Role             @default(EMPLOYE)
   departement  String?
+  estApprouve  Boolean          @default(false)
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
   assets       Asset[]          @relation("ResponsibleUser")

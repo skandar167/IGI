@@ -38,6 +38,7 @@ async function main() {
       passwordHash: adminHash,
       role: 'ADMIN' as const,
       departement: 'Direction des Opérations',
+      estApprouve: true,
     },
     {
       id: 'user-gest-1',
@@ -46,6 +47,7 @@ async function main() {
       passwordHash: gestHash,
       role: 'GESTIONNAIRE' as const,
       departement: 'Services Généraux & Flotte',
+      estApprouve: true,
     },
     {
       id: 'user-emp-1',
@@ -54,13 +56,14 @@ async function main() {
       passwordHash: empHash,
       role: 'EMPLOYE' as const,
       departement: 'Maintenance & Logistique',
+      estApprouve: true,
     },
   ];
 
   for (const u of users) {
     await prisma.user.upsert({
       where: { email: u.email },
-      update: { passwordHash: u.passwordHash, nom: u.nom, role: u.role, departement: u.departement },
+      update: { passwordHash: u.passwordHash, nom: u.nom, role: u.role, departement: u.departement, estApprouve: u.estApprouve },
       create: u,
     });
   }

@@ -2,51 +2,25 @@
 
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
-import { Lock, Mail, ArrowRight, AlertCircle, KeyRound } from 'lucide-react';
+import { Lock, Mail, ArrowRight, AlertCircle, Clock, UserPlus } from 'lucide-react';
 import { signIn } from 'next-auth/react';
-
-const AVAILABLE_ACCOUNTS = [
-  {
-    role: 'Administrateur',
-    email: 'admin@meteor-pro.dz',
-    password: 'Admin2024!',
-    badge: 'Admin',
-    badgeColor: 'bg-rose-100 text-rose-700',
-    desc: 'Accès complet & configuration',
-  },
-  {
-    role: 'Gestionnaire de parc',
-    email: 'gestionnaire@meteor-pro.dz',
-    password: 'Gest2024!',
-    badge: 'Gestionnaire',
-    badgeColor: 'bg-indigo-100 text-indigo-700',
-    desc: 'Flotte, biens & maintenance',
-  },
-  {
-    role: 'Agent terrain',
-    email: 'employe@meteor-pro.dz',
-    password: 'Emp2024!',
-    badge: 'Employé',
-    badgeColor: 'bg-emerald-100 text-emerald-700',
-    desc: 'Scan QR & signalements',
-  },
-];
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const callbackUrl = searchParams.get('callbackUrl') || '/home';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [errorType, setErrorType] = useState<'CREDENTIALS' | 'PENDING_APPROVAL' | 'GENERIC' | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setErrorType(null);
 
     try {
       const res = await signIn('credentials', {
@@ -56,7 +30,11 @@ function LoginForm() {
       });
 
       if (res?.error) {
-        setError('Adresse e-mail ou mot de passe incorrect.');
+        if (res.error.includes('PENDING_APPROVAL')) {
+          setErrorType('PENDING_APPROVAL');
+        } else {
+          setErrorType('CREDENTIALS');
+        }
         setLoading(false);
         return;
       }
@@ -64,15 +42,9 @@ function LoginForm() {
       router.push(callbackUrl);
       router.refresh();
     } catch (err: any) {
-      setError(err?.message || 'Une erreur est survenue lors de la connexion.');
+      setErrorType('GENERIC');
       setLoading(false);
     }
-  };
-
-  const handlePreFill = (accEmail: string, accPass: string) => {
-    setEmail(accEmail);
-    setPassword(accPass);
-    setError(null);
   };
 
   return (
@@ -93,16 +65,35 @@ function LoginForm() {
             Météor Pro — Connexion
           </h1>
           <p className="text-xs text-slate-500">
-            Portail sécurisé d&apos;inventaire des immobilisations et gestion QR Code
+            Portail sécurisé d&apos;inventaire et de gestion des immobilisations par QR Code
           </p>
         </div>
 
         {/* Credentials Form */}
         <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/80 shadow-md space-y-5">
-          {error && (
+          {errorType === 'PENDING_APPROVAL' && (
+            <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
+              <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold text-amber-950">Compte en attente d&apos;approbation</p>
+                <p className="mt-0.5 text-amber-800">
+                  Votre demande d&apos;accès a été bien reçue mais n&apos;a pas encore été validée par un administrateur. Veuillez patienter ou contacter le service informatique.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {errorType === 'CREDENTIALS' && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>{error}</span>
+              <span>Adresse e-mail ou mot de passe incorrect.</span>
+            </div>
+          )}
+
+          {errorType === 'GENERIC' && (
+            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>Une erreur est survenue lors de la connexion. Veuillez réessayer.</span>
             </div>
           )}
 
@@ -116,7 +107,7 @@ function LoginForm() {
                 <input
                   type="email"
                   required
-                  placeholder="admin@meteor-pro.dz"
+                  placeholder="nom@meteor-pro.dz"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-3.5 py-2.5 text-xs sm:text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -156,45 +147,19 @@ function LoginForm() {
               )}
             </button>
           </form>
-        </div>
 
-        {/* Available Accounts reference card */}
-        <div className="bg-slate-50 border border-slate-200/90 rounded-3xl p-5 space-y-3">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-            <KeyRound className="w-4 h-4 text-indigo-600" />
-            <span>Comptes préconfigurés en base :</span>
-          </div>
-
-          <div className="space-y-2">
-            {AVAILABLE_ACCOUNTS.map((acc) => (
-              <div
-                key={acc.email}
-                className="p-3 rounded-2xl bg-white border border-slate-200/70 flex items-center justify-between text-xs gap-2"
+          {/* Registration link */}
+          <div className="pt-4 border-t border-slate-100 text-center">
+            <p className="text-xs text-slate-500">
+              Nouveau collaborateur ?{' '}
+              <Link
+                href="/register"
+                className="font-bold text-indigo-600 hover:text-indigo-800 inline-flex items-center gap-1"
               >
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-slate-900">{acc.role}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${acc.badgeColor}`}>
-                      {acc.badge}
-                    </span>
-                  </div>
-                  <p className="font-mono text-[11px] text-slate-600 select-all">
-                    {acc.email}
-                  </p>
-                  <p className="text-[10px] text-slate-400">
-                    Mot de passe : <span className="font-mono font-semibold text-slate-700">{acc.password}</span>
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handlePreFill(acc.email, acc.password)}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-[11px] font-semibold text-slate-600 transition shrink-0 cursor-pointer"
-                >
-                  Remplir
-                </button>
-              </div>
-            ))}
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Demander un accès</span>
+              </Link>
+            </p>
           </div>
         </div>
       </div>

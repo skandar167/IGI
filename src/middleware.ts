@@ -23,11 +23,11 @@ export function middleware(req: NextRequest) {
   // Allow public scan page: /assets/[id] (but NOT /assets, /assets/new, or /assets/[id]/edit)
   const isAssetScanPage = /^\/assets\/[^/]+$/.test(pathname);
   const isIncidentApi = /^\/api\/assets\/[^/]+\/incident$/.test(pathname);
-  const isLoginPage = pathname === '/login';
+  const isAuthPage = pathname === '/login' || pathname === '/register';
 
-  if (isLoginPage) {
+  if (isAuthPage) {
     if (hasSession) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+      return NextResponse.redirect(new URL('/home', req.url));
     }
     return NextResponse.next();
   }
@@ -39,7 +39,7 @@ export function middleware(req: NextRequest) {
   // Root redirect
   if (pathname === '/') {
     if (hasSession) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
+      return NextResponse.redirect(new URL('/home', req.url));
     } else {
       return NextResponse.redirect(new URL('/login', req.url));
     }

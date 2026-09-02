@@ -67,13 +67,16 @@ export const dbService = {
 
   async getUsers(): Promise<User[]> {
     if (await dbService.isPrismaActive()) {
-      const users = await prisma!.user.findMany();
+      const users = await prisma!.user.findMany({
+        orderBy: { createdAt: 'desc' },
+      });
       return users.map((u) => ({
         id: u.id,
         nom: u.nom,
         email: u.email,
         role: u.role as any,
         departement: u.departement || undefined,
+        estApprouve: u.estApprouve,
         createdAt: u.createdAt.toISOString(),
         updatedAt: u.updatedAt.toISOString(),
       }));
@@ -95,12 +98,94 @@ export const dbService = {
         passwordHash: u.passwordHash,
         role: u.role as any,
         departement: u.departement || undefined,
+        estApprouve: u.estApprouve,
         createdAt: u.createdAt.toISOString(),
         updatedAt: u.updatedAt.toISOString(),
       };
     }
     const found = mockUsers.find((u) => u.email.toLowerCase() === normalized);
     return found || null;
+  },
+
+  async createUser(data: {
+    nom: string;
+    email: string;
+    passwordHash: string;
+    departement?: string;
+    role?: 'ADMIN' | 'GESTIONNAIRE' | 'EMPLOYE';
+    estApprouve?: boolean;
+  }): Promise<User> {
+    const normalized = data.email.trim().toLowerCase();
+    if (await dbService.isPrismaActive()) {
+      const created = await prisma!.user.create({
+        data: {
+          nom: data.nom,
+          email: normalized,
+          passwordHash: data.passwordHash,
+          departement: data.departement,
+          role: data.role || 'EMPLOYE',
+          estApprouve: data.estApprouve ?? false,
+        },
+      });
+      return {
+        id: created.id,
+        nom: created.nom,
+        email: created.email,
+        passwordHash: created.passwordHash,
+        role: created.role as any,
+        departement: created.departement || undefined,
+        estApprouve: created.estApprouve,
+        createdAt: created.createdAt.toISOString(),
+        updatedAt: created.updatedAt.toISOString(),
+      };
+    }
+    const user: User = {
+      id: `user-${Date.now()}`,
+      nom: data.nom,
+      email: normalized,
+      passwordHash: data.passwordHash,
+      role: data.role || 'EMPLOYE',
+      departement: data.departement,
+      estApprouve: data.estApprouve ?? false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockUsers.unshift(user);
+    return user;
+  },
+
+  async updateUserApproval(userId: string, estApprouve: boolean): Promise<User | null> {
+    if (await dbService.isPrismaActive()) {
+      const updated = await prisma!.user.update({
+        where: { id: userId },
+        data: { estApprouve },
+      });
+      return {
+        id: updated.id,
+        nom: updated.nom,
+        email: updated.email,
+        role: updated.role as any,
+        departement: updated.departement || undefined,
+        estApprouve: updated.estApprouve,
+        createdAt: updated.createdAt.toISOString(),
+        updatedAt: updated.updatedAt.toISOString(),
+      };
+    }
+    const found = mockUsers.find((u) => u.id === userId);
+    if (found) {
+      found.estApprouve = estApprouve;
+      return found;
+    }
+    return null;
+  },
+
+  async deleteUser(userId: string): Promise<boolean> {
+    if (await dbService.isPrismaActive()) {
+      await prisma!.user.delete({ where: { id: userId } });
+      return true;
+    }
+    mockUsers = mockUsers.filter((u) => u.id !== userId);
+    return true;
   },
 
   async getAssets(filters?: {
